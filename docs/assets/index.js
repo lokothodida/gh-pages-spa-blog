@@ -2,12 +2,20 @@ const markdownConverter = new showdown.Converter({
     tables: true,
 });
 
-const Home = {
+const Home = (entries) => ({
+    props: ["year", "month", "day"],
+
+    data() {
+        return {
+            entries,
+        };
+    },
+
     template: `<div>
         <h1>Github Pages Blog</h1>
         <ul>
-            <li v-for="entry in entries">
-                <h2><router-link :to="{name: 'entry', params: { id: entry.id }}">
+            <li v-for="entry in filteredEntries">
+                <h2><router-link :to="{name: 'entry', params: getEntryParams(entry)}">
                     {{ entry.title }}
                 </router-link></h2>
                 <p>Posted <i>{{ entry.date }}</i></p>
@@ -16,30 +24,40 @@ const Home = {
         </ul>
     </div>`,
 
-    data() {
-        return {
-            entries: [],
-        };
-    },
+    computed: {
+        filteredEntries() {
+            return entries.filter(entry => {
+                let date = entry.date.toISOString().split("T")[0].split("-")
+                let keep = true;
 
-    mounted() {
-        this.loadEntries();
+                keep = keep && (!this.year || this.year == date[0]);
+                keep = keep && (!this.month || this.month == date[1]);
+                keep = keep && (!this.day || this.day == date[2]);
+
+                return keep;
+            })
+        }
     },
 
     methods: {
-        async loadEntries() {
-            let config = jsyaml.load(await fetch("./data/config.yaml").then(yaml => yaml.text()));
-            this.entries = config.entries;
+        getEntryParams(entry) {
+            const date = entry.date.toISOString().split("T")[0].split("-");
+            return {
+                id: entry.id,
+                year: date[0],
+                month: date[1],
+                day: date[2],
+            }
         },
 
         asHTML(markdown) {
             return markdownConverter.makeHtml(markdown);
         }
     },
-};
+});
 
-const Entry = {
-    props: ["id"],
+const Entry = (entries) => ({
+    props: ["year", "month", "day", "id"],
 
     data() {
         return {
@@ -58,6 +76,11 @@ const Entry = {
 
     methods: {
         async loadEntry() {
+            const details = entries.find(entry => entry.id == this.id);
+            if (!details || details.date.toISOString().split("T")[0] !== `${this.year}-${this.month}-${this.day}`) {
+                return;
+            }
+
             let entry = await fetch(`./data/entries/${this.id}.md`).then(markdown => markdown.text());
             this.content = markdownConverter.makeHtml(entry);
         },
@@ -66,29 +89,46 @@ const Entry = {
             return markdownConverter.makeHtml(markdown);
         }
     }
-};
+});
 
-const app = Vue.createApp({});
+fetch("./data/config.yaml").then(yaml => yaml.text()).then(blob => {
+    const config = jsyaml.load(blob);
+    const entries = config.entries.map(entry => ({
+        ...entry,
+        date: new Date(entry.date),
+    }));
+    const app = Vue.createApp({});
 
-app.use(VueRouter.createRouter({
-    history: VueRouter.createWebHashHistory(),
-    routes: [
-        {
-            name: "home",
-            path: "/",
-            component: Home,
-        },
-        {
-            name: "entry",
-            path: "/entries/:id",
-            component: Entry,
-            props(router) {
-                return {
-                    id: router.params.id,
+    app.use(VueRouter.createRouter({
+        history: VueRouter.createWebHashHistory(),
+        routes: [
+            {
+                name: "home",
+                path: "/:year?/:month?/:day?",
+                component: Home(entries),
+                props(router) {
+                    return {
+                        year: router.params.year,
+                        month: router.params.month,
+                        day: router.params.day,
+                    };
                 }
-            }
-        },
-    ],
-}));
+            },
+            {
+                name: "entry",
+                path: "/entries/:year/:month/:day/:id",
+                component: Entry(entries),
+                props(router) {
+                    return {
+                        year: router.params.year,
+                        month: router.params.month,
+                        day: router.params.day,
+                        id: router.params.id,
+                    }
+                }
+            },
+        ],
+    }));
 
-app.mount("#app");
+    app.mount("#app");
+});
