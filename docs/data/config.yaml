@@ -3,5 +3,5 @@ entries:
     title: "Lorem Ipsum"
     date: "2022-01-01"
     description: >
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+      **Lorem ipsum** dolor sit amet, *consectetur adipiscing elit*.
 

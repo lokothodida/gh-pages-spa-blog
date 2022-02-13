@@ -7,9 +7,11 @@ const Home = {
         <h1>Github Pages Blog</h1>
         <ul>
             <li v-for="entry in entries">
-                <router-link :to="{name: 'entry', params: { id: entry.id }}">
+                <h2><router-link :to="{name: 'entry', params: { id: entry.id }}">
                     {{ entry.title }}
-                </router-link>
+                </router-link></h2>
+                <p>Posted <i>{{ entry.date }}</i></p>
+                <div v-html="asHTML(entry.description)"></div>
             </li>
         </ul>
     </div>`,
@@ -28,6 +30,10 @@ const Home = {
         async loadEntries() {
             let config = jsyaml.load(await fetch("./data/config.yaml").then(yaml => yaml.text()));
             this.entries = config.entries;
+        },
+
+        asHTML(markdown) {
+            return markdownConverter.makeHtml(markdown);
         }
     },
 };
@@ -55,6 +61,10 @@ const Entry = {
             let entry = await fetch(`./data/entries/${this.id}.md`).then(markdown => markdown.text());
             this.content = markdownConverter.makeHtml(entry);
         },
+
+        asHTML(markdown) {
+            return markdownConverter.makeHtml(markdown);
+        }
     }
 };
 
