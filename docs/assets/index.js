@@ -7,12 +7,12 @@ const markdownConverter = new showdown.Converter({
 });
 
 const Home = (entries) => ({
-    props: ["year", "month", "day"],
+    props: ["year", "month", "day", "initialTags"],
 
     data() {
         return {
             entries,
-            tags: '',
+            tags: this.initialTags || "",
         };
     },
 
@@ -28,12 +28,28 @@ const Home = (entries) => ({
                 </router-link></h2>
                 <p>Posted <i>{{ entry.date }}</i></p>
                 <div v-html="asHTML(entry.description)"></div>
+                <p>
+                    <b>Tags</b>: <span>
+                        <router-link
+                            v-for="tag in entry.tags"
+                            class="tag"
+                            :to="{name: 'home', query: {tags: tag}}">
+                            {{ tag }}
+                        </router-link>
+                    </span>
+                </p>
             </li>
         </ul>
     </div>`,
 
     mounted() {
         setTitle("Github Pages Blog");
+    },
+
+    watch: {
+        '$route.query': function(to) {
+            this.tags = to.tags;
+        },
     },
 
     computed: {
@@ -77,11 +93,22 @@ const Entry = (entries) => ({
     data() {
         return {
             content: '',
+            details: {},
         };
     },
 
     template: `<div>
         <div v-html="content"></div>
+        <p>
+            <b>Tags</b>: <span>
+                <router-link
+                    v-for="tag in details.tags"
+                    class="tag"
+                    :to="{name: 'home', query: {tags: tag}}">
+                    {{ tag }}
+                </router-link>
+            </span>
+        </p>
         <p><router-link :to="{name: 'home'}">Back to home</router-link></p>
     </div>`,
 
@@ -101,8 +128,9 @@ const Entry = (entries) => ({
             }
 
             let entry = await fetch(`./data/entries/${this.id}.md`).then(markdown => markdown.text());
+            this.details = details;
             this.content = markdownConverter.makeHtml(entry);
-            setTitle(details.title);
+            setTitle(this.details.title);
         },
     }
 });
@@ -127,6 +155,7 @@ fetch("./data/config.yaml").then(yaml => yaml.text()).then(blob => {
                         year: router.params.year,
                         month: router.params.month,
                         day: router.params.day,
+                        initialTags: router.query.tags,
                     };
                 }
             },
