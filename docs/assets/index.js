@@ -1,3 +1,7 @@
+function setTitle(title) {
+    document.querySelector("title").textContent = title;
+}
+
 const markdownConverter = new showdown.Converter({
     tables: true,
 });
@@ -27,6 +31,10 @@ const Home = (entries) => ({
             </li>
         </ul>
     </div>`,
+
+    mounted() {
+        setTitle("Github Pages Blog");
+    },
 
     computed: {
         filteredEntries() {
@@ -94,11 +102,8 @@ const Entry = (entries) => ({
 
             let entry = await fetch(`./data/entries/${this.id}.md`).then(markdown => markdown.text());
             this.content = markdownConverter.makeHtml(entry);
+            setTitle(details.title);
         },
-
-        asHTML(markdown) {
-            return markdownConverter.makeHtml(markdown);
-        }
     }
 });
 
