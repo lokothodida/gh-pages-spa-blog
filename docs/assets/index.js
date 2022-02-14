@@ -8,11 +8,15 @@ const Home = (entries) => ({
     data() {
         return {
             entries,
+            tags: '',
         };
     },
 
     template: `<div>
         <h1>Github Pages Blog</h1>
+        <p>
+            Search for tags: <input type="text" v-model="tags" placeholder="e.g. tag1, tag2"/>
+        </p>
         <ul>
             <li v-for="entry in filteredEntries">
                 <h2><router-link :to="{name: 'entry', params: getEntryParams(entry)}">
@@ -26,6 +30,8 @@ const Home = (entries) => ({
 
     computed: {
         filteredEntries() {
+            const tags = this.tags.split(",").map(t => t.trim()).filter(t => t);
+
             return entries.filter(entry => {
                 let date = entry.date.toISOString().split("T")[0].split("-")
                 let keep = true;
@@ -33,6 +39,7 @@ const Home = (entries) => ({
                 keep = keep && (!this.year || this.year == date[0]);
                 keep = keep && (!this.month || this.month == date[1]);
                 keep = keep && (!this.day || this.day == date[2]);
+                keep = tags.reduce((keep, tag) => keep && entry.tags.includes(tag), keep);
 
                 return keep;
             })
@@ -76,8 +83,12 @@ const Entry = (entries) => ({
 
     methods: {
         async loadEntry() {
-            const details = entries.find(entry => entry.id == this.id);
-            if (!details || details.date.toISOString().split("T")[0] !== `${this.year}-${this.month}-${this.day}`) {
+            const details = entries.find(entry => {
+                return entry.id == this.id &&
+                    entry.date.toISOString().split("T")[0] == `${this.year}-${this.month}-${this.day}`;
+            });
+
+            if (!details) {
                 return;
             }
 
@@ -96,7 +107,7 @@ fetch("./data/config.yaml").then(yaml => yaml.text()).then(blob => {
     const entries = config.entries.map(entry => ({
         ...entry,
         date: new Date(entry.date),
-    }));
+    })).sort((entry1, entry2) => -(entry1.date > entry2.date));
     const app = Vue.createApp({});
 
     app.use(VueRouter.createRouter({

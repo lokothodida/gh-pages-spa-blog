@@ -2,5 +2,12 @@ entries:
   - id: "lorem-ipsum"
     title: "Lorem Ipsum"
     date: "2022-01-01"
+    tags: ["lorem", "ipsum", "sample"]
     description: >
       **Lorem ipsum** dolor sit amet, *consectetur adipiscing elit*.
+  - id: "lorem-ipsum-2"
+    title: "Lorem Ipsum 2"
+    date: "2022-02-01"
+    tags: ["lorem2"]
+    description: >
+      Nulla laoreet eros quis erat sagittis facilisis.
